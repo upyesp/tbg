@@ -1,0 +1,3 @@
+# V1 scope boundaries: what we are explicitly not building
+
+To Boldly Go v1 is a planner and follower of user-defined journeys — deliberately not a navigation product. Explicitly out of scope for v1: turn-by-turn navigation, automated route finding, indoor positioning, live transit data, map visuals as a primary interface, social features, and in-app payments. Recorded because each is an obvious feature someone will eventually propose; all were considered and rejected on cost (the free-running-costs rule), complexity, or because they encode sighted-navigation assumptions that don't fit a screen-reader-first product.

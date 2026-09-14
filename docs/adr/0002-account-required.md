@@ -1,0 +1,3 @@
+# An account is required; no anonymous local-only mode
+
+Every user creates a passkey account before using the app — there is no anonymous, account-free mode. This was a real trade-off: local-first anonymous use was considered and rejected to keep the data model single-tracked (the device copy is always the account's data). After first sign-in the session is cached on the device so day-to-day use works offline; when online the app periodically re-verifies the account, and prolonged failure to re-verify restricts Planner (Follow is never restricted) as a safeguard. Parameter details of that re-check policy are refined in planning docs, not here.

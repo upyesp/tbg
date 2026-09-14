@@ -1,0 +1,3 @@
+# Straight-line Distance only; no routing API
+
+Every distance in Follow mode is Straight-line Distance (great-circle) — we never call a routing service for walking/transit distances. Routing APIs are paid and online-only, which breaks both the free-running-costs rule and offline following; and since users define their own path between Stops (this is deliberately not a route-finding app), straight-line plus Clock-face Direction is the honest, computable contract. Considered and rejected: paid walking-distance routing (cost + connectivity), client-side OpenStreetMap routing engines (bundle size, still only approximates the user's actual path).
