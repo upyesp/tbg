@@ -1,24 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { advanceStop, followTick, initFollowState, type GuidanceEvent, type FollowState } from '../../lib/follow-engine';
-import type { Fix } from '../../lib/follow-engine';
+import { useSyncExternalStore } from 'react';
+import {
+  STALE_MS,
+  advanceStop,
+  followTick,
+  initFollowState,
+  type Fix,
+  type FollowState,
+  type GuidanceEvent,
+} from '../../lib/follow-engine';
 import { encodePlusCode } from '../../lib/pluscode';
-import { formatDirection, formatDistance, guidanceLine, weakSignalLine, whereAmILine } from '../../lib/guidance-text';
+import {
+  eventGuidanceLine,
+  formatDistance,
+  formatDirection,
+  guidanceLine,
+  weakSignalLine,
+  whereAmILine,
+} from '../../lib/guidance-text';
 import { acquireWakeLock, watchFixes, type WakeLockHandle } from '../../lib/sensors';
 import { playEarcon, speak, vibrate } from '../../lib/output';
 import { planStore } from '../../lib/sync/store';
-import { DEFAULT_LOCALE, speechLang, t } from '../../lib/i18n';
-import { useSyncExternalStore } from 'react';
-
-function eventLine(kind: GuidanceEvent['kind'], stopName: string, distance: number | null): string {
-  if (kind === 'approaching') {
-    return `Approaching ${stopName}.${distance !== null ? ` ${formatDistance(distance)}.` : ''}`;
-  }
-  if (kind === 'moving_away') {
-    return `Moving away from ${stopName}. Check your direction.`;
-  }
-  return `You have arrived at ${stopName}.`;
-}
+import { DEFAULT_LOCALE, dir, speechLang, t } from '../../lib/i18n';
 
 /** Arrow angle (degrees clockwise from 12 o'clock) for the radar visual. */
 function radarAngle(state: FollowState): number {
@@ -40,17 +44,14 @@ export function Follow() {
   const wasWeakRef = useRef(false);
   const total = plan?.stops.length ?? 0;
   const currentStop = plan?.stops[state.stopIndex];
-  const finished = currentStop === undefined || (state.arrived && state.stopIndex === total - 1);
 
-  // Guidance output: announce every new event three ways.
-  const announceEvents = (events: GuidanceEvent[], stopName: string, distance: number | null) => {
-    for (const event of events) {
-      const line = eventLine(event.kind, stopName, distance);
-      playEarcon(event.kind);
-      vibrate(event.kind);
-      speak(line, speechLang(DEFAULT_LOCALE));
-      setAnnouncement(line);
-    }
+  // Every Guidance output goes through one door: earcon + speech + vibration,
+  // mirrored into the aria-live region for screen readers.
+  const announce = (line: string, kind: GuidanceEvent['kind'] | 'info' = 'info') => {
+    playEarcon(kind);
+    vibrate(kind);
+    speak(line, speechLang(DEFAULT_LOCALE));
+    setAnnouncement(line);
   };
 
   // Watch location while mounted (foreground-only per ADR-0004).
@@ -62,8 +63,10 @@ export function Follow() {
         stateRef.current = next;
         setState(next);
         const stop = plan.stops[next.stopIndex];
-        if (stop !== undefined && next.events.length > 0) {
-          announceEvents(next.events, stop.name, next.distance);
+        for (const event of next.events) {
+          if (stop !== undefined) {
+            announce(eventGuidanceLine(event.kind, stop.name, next.distance), event.kind);
+          }
         }
       },
       (message) => setError(message),
@@ -72,14 +75,28 @@ export function Follow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan?.id]);
 
-  // Announce weak-signal transitions once.
+  // Total GPS dropout: no new fixes arrive, so the engine never re-evaluates.
+  // Notice staleness from the outside and say so — never stay silently 'ok'.
   useEffect(() => {
-    if (state.signal === 'weak' && !wasWeakRef.current) {
-      const age = state.lastFix !== null ? (Date.now() - state.lastFix.timestamp) / 1000 : 0;
-      const line = `${t(DEFAULT_LOCALE, 'weak_signal')} ${weakSignalLine(age)}`;
-      speak(line, speechLang(DEFAULT_LOCALE));
-      vibrate('info');
-      setAnnouncement(line);
+    const id = window.setInterval(() => {
+      const s = stateRef.current;
+      if (s.lastFix === null || s.signal === 'weak') return;
+      const ageMs = Date.now() - s.lastFix.timestamp;
+      if (ageMs > STALE_MS) {
+        const weakState = { ...s, signal: 'weak' as const, weakReason: 'stale' as const };
+        stateRef.current = weakState;
+        setState(weakState);
+        announce(weakSignalLine(ageMs / 1000), 'info');
+      }
+    }, 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Announce weak-signal transitions that the engine itself detected.
+  useEffect(() => {
+    if (state.signal === 'weak' && !wasWeakRef.current && state.lastFix !== null) {
+      announce(weakSignalLine((Date.now() - state.lastFix.timestamp) / 1000));
     }
     wasWeakRef.current = state.signal === 'weak';
   }, [state.signal, state.lastFix]);
@@ -113,23 +130,16 @@ export function Follow() {
 
   const repeat = () => {
     if (currentStop === undefined) return;
-    const line = guidanceLine(currentStop, state, total);
-    playEarcon('info');
-    speak(line, speechLang(DEFAULT_LOCALE));
-    setAnnouncement(line);
+    announce(guidanceLine(currentStop, state, total));
   };
 
   const whereAmI = () => {
     const fix = state.lastFix;
     if (fix === null) {
-      setAnnouncement('No position fix yet.');
+      setAnnouncement(t('no_fix_yet'));
       return;
     }
-    const code = encodePlusCode(fix.lat, fix.lng);
-    const line = whereAmILine(currentStop, code, fix.lat, fix.lng);
-    playEarcon('info');
-    speak(line, speechLang(DEFAULT_LOCALE));
-    setAnnouncement(line);
+    announce(whereAmILine(currentStop, encodePlusCode(fix.lat, fix.lng), fix.lat, fix.lng));
   };
 
   const nextStop = () => {
@@ -141,11 +151,12 @@ export function Follow() {
   const directionText = formatDirection(state.direction);
   const fixAgeSeconds =
     state.lastFix !== null ? Math.max(0, Math.round((Date.now() - state.lastFix.timestamp) / 1000)) : null;
+  const positionKnown = state.signal === 'ok' && state.distance !== null;
 
   return (
     <main id="main" className="follow">
       <p className="follow-header">
-        <Link to="/">{t(DEFAULT_LOCALE, 'back_to_planner')}</Link>
+        <Link to="/">{t('back_to_planner')}</Link>
         <span aria-hidden="true"> · </span>
         {plan.name}
       </p>
@@ -163,28 +174,26 @@ export function Follow() {
 
       {state.signal === 'weak' && (
         <p role="status" className="banner warn">
-          {t(DEFAULT_LOCALE, 'weak_signal')}
-          {fixAgeSeconds !== null && ` ${t(DEFAULT_LOCALE, 'last_fix_seconds_ago')}`}
+          {t('weak_signal')}
+          {fixAgeSeconds !== null && ` ${t('last_fix_ago')} ${fixAgeSeconds} ${t('seconds_ago')}.`}
         </p>
       )}
 
       {currentStop !== undefined ? (
         <>
           <p className="progress">
-            {t(DEFAULT_LOCALE, 'follow_stop_of')} {state.stopIndex + 1} {t(DEFAULT_LOCALE, 'follow_of')}{' '}
-            {total}
+            {t('follow_stop_of')} {state.stopIndex + 1} {t('follow_of')} {total}
           </p>
 
           <h1 className="instruction">{currentStop.name}</h1>
 
           <p className="detail">
-            {state.distance !== null && (
+            {positionKnown && directionText !== null && (
               <>
-                {formatDistance(state.distance)}
-                {directionText !== null && <> · {directionText}</>}
+                {formatDistance(state.distance as number)} · {directionText}
               </>
             )}
-            {state.distance === null && <span className="meta">Waiting for a position fix…</span>}
+            {!positionKnown && <span className="meta">{t('waiting_for_fix')}</span>}
           </p>
 
           <svg
@@ -207,26 +216,26 @@ export function Follow() {
 
           <div className="follow-actions">
             <button type="button" onClick={repeat}>
-              {t(DEFAULT_LOCALE, 'repeat_guidance')}
+              {t('repeat_guidance')}
             </button>
             <button type="button" onClick={nextStop}>
-              {t(DEFAULT_LOCALE, 'next_stop')}
+              {t('next_stop')}
             </button>
             <button type="button" onClick={whereAmI}>
-              {t(DEFAULT_LOCALE, 'where_am_i')}
+              {t('where_am_i')}
             </button>
             <Link className="button" to="/">
-              {t(DEFAULT_LOCALE, 'end_follow')}
+              {t('end_follow')}
             </Link>
           </div>
         </>
       ) : (
-        <p className="instruction">{t(DEFAULT_LOCALE, 'journey_complete')}</p>
+        <p className="instruction">{t('journey_complete')}</p>
       )}
 
-      {finished && currentStop !== undefined && state.arrived && (
+      {currentStop !== undefined && state.arrived && state.stopIndex === total - 1 && (
         <p role="status" className="banner ok">
-          {t(DEFAULT_LOCALE, 'journey_complete')}
+          {t('journey_complete')}
         </p>
       )}
     </main>

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { advanceStop, followTick, initFollowState, type Fix, type EngineStop } from './follow-engine';
-import { formatDirection, formatDistance, guidanceLine, weakSignalLine } from './guidance-text';
+import {
+  eventGuidanceLine,
+  formatDirection,
+  formatDistance,
+  guidanceLine,
+  weakSignalLine,
+} from './guidance-text';
 
 const STOPS: EngineStop[] = [
   { id: 'a', name: 'Town Hall', lat: 0, lng: 0 },
@@ -50,6 +56,30 @@ describe('guidanceLine', () => {
   it('is silent about direction until a fix gives one', () => {
     const state = initFollowState();
     expect(guidanceLine(STOPS[0]!, state, 2)).toBe('Town Hall. Stop 1 of 2.');
+  });
+
+  it('never speaks a stale distance while the signal is weak', () => {
+    const state = {
+      ...initFollowState(),
+      distance: 1234,
+      signal: 'weak' as const,
+      weakReason: 'stale' as const,
+      lastFix: fix({ timestamp: T0 - 60_000 }),
+    };
+    expect(guidanceLine(STOPS[0]!, state, 2)).toBe('Town Hall. Position unknown. Stop 1 of 2.');
+  });
+
+  describe('eventGuidanceLine', () => {
+    it('announces approaching with the distance', () => {
+      expect(eventGuidanceLine('approaching', 'Library', 95)).toBe('Approaching Library. 95 metres.');
+    });
+
+    it('announces arrival and moving-away', () => {
+      expect(eventGuidanceLine('arrived', 'Library', 20)).toBe('You have arrived at Library.');
+      expect(eventGuidanceLine('moving_away', 'Library', 150)).toBe(
+        'Moving away from Library. Check your direction.',
+      );
+    });
   });
 });
 

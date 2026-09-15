@@ -7,11 +7,9 @@
  * beats an older tombstone, and vice versa.
  */
 
-export interface Versioned {
-  id: string;
-  updatedAt: number;
-  deleted?: boolean | undefined;
-}
+import type { Versioned } from '../domain';
+
+export type { Versioned };
 
 export function mergeEntity<T extends Versioned>(
   local: T | undefined,

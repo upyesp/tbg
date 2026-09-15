@@ -3,11 +3,12 @@
  * formats; Docx and PDF build on the same intermediate).
  */
 
-import type { JourneyPlan } from './domain';
+import type { JourneyPlan, ModeOfTravel } from './domain';
 import { encodePlusCode } from './pluscode';
 import { formatLatLng } from './guidance-text';
+import { t } from './i18n';
 
-export const MODE_LABELS: Record<string, string> = {
+export const MODE_LABELS: Record<ModeOfTravel, string> = {
   walking: 'Walking',
   manual_wheelchair: 'Manual wheelchair',
   power_wheelchair: 'Power wheelchair',
@@ -26,16 +27,18 @@ export function planToMarkdown(plan: JourneyPlan): string {
 
   plan.stops.forEach((stop, i) => {
     lines.push(`## Stop ${i + 1}: ${stop.name}`, '');
-    lines.push(`- Coordinates: ${formatLatLng(stop.lat, stop.lng)}`);
-    lines.push(`- Plus code: ${encodePlusCode(stop.lat, stop.lng)}`);
-    if (stop.note !== undefined && stop.note !== '') lines.push(`- Note: ${stop.note}`);
+    lines.push(`- ${t('coordinates_label')}: ${formatLatLng(stop.lat, stop.lng)}`);
+    lines.push(`- ${t('plus_code_label')}: ${encodePlusCode(stop.lat, stop.lng)}`);
+    if (stop.note !== undefined && stop.note !== '') lines.push(`- ${t('note')}: ${stop.note}`);
     lines.push('');
 
     const leg = plan.legs[i];
     const next = plan.stops[i + 1];
     if (leg !== undefined && next !== undefined) {
-      const mode = leg.modeOfTravel !== undefined ? MODE_LABELS[leg.modeOfTravel] ?? leg.modeOfTravel : 'unspecified';
+      const mode =
+        leg.modeOfTravel !== undefined ? MODE_LABELS[leg.modeOfTravel] : 'unspecified';
       lines.push(`**To ${next.name}** — ${mode}.`, '');
+      if (leg.note !== undefined && leg.note !== '') lines.push(`- ${t('leg_note')}: ${leg.note}`, '');
     }
   });
 

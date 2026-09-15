@@ -18,6 +18,7 @@ import {
   removeStop,
   reversePlan,
   setLegMode,
+  setLegNote,
   type JourneyPlan,
   type ModeOfTravel,
   type Stop,
@@ -76,10 +77,6 @@ export class PlanStore {
     return this.visible;
   };
 
-  getPlans(): JourneyPlan[] {
-    return this.getSnapshot();
-  }
-
   getPlan(id: string): JourneyPlan | undefined {
     return this.getSnapshot().find((p) => p.id === id);
   }
@@ -113,12 +110,6 @@ export class PlanStore {
     );
   }
 
-  rename(planId: string, name: string): void {
-    this.update(
-      this.ensure().map((p) => (p.id === planId ? { ...p, name, updatedAt: Date.now() } : p)),
-    );
-  }
-
   appendStop(planId: string, stop: Stop): void {
     this.update(this.ensure().map((p) => (p.id === planId ? addStop(p, stop) : p)));
   }
@@ -133,6 +124,10 @@ export class PlanStore {
 
   changeLegMode(planId: string, legId: string, mode: ModeOfTravel): void {
     this.update(this.ensure().map((p) => (p.id === planId ? setLegMode(p, legId, mode) : p)));
+  }
+
+  changeLegNote(planId: string, legId: string, note: string): void {
+    this.update(this.ensure().map((p) => (p.id === planId ? setLegNote(p, legId, note) : p)));
   }
 
   reverse(planId: string): void {

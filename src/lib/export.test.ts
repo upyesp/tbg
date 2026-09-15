@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addStop, makePlan, makeStop, setLegMode, type JourneyPlan } from './domain';
+import { addStop, makePlan, makeStop, setLegMode, setLegNote, type JourneyPlan } from './domain';
 import { planToMarkdown } from './export';
 
 function samplePlan(): JourneyPlan {
@@ -34,5 +34,12 @@ describe('planToMarkdown', () => {
     expect(md).not.toContain('To undefined');
     const legLines = md.split('\n').filter((l) => l.startsWith('**To '));
     expect(legLines).toHaveLength(1);
+  });
+
+  it('includes leg notes', () => {
+    const base = samplePlan();
+    const plan = setLegNote(base, base.legs[0]!.id, 'Step-free entrance on the south side');
+    const md = planToMarkdown(plan);
+    expect(md).toContain('Leg note: Step-free entrance on the south side');
   });
 });

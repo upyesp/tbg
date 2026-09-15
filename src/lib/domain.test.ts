@@ -8,6 +8,7 @@ import {
   removeStop,
   reversePlan,
   setLegMode,
+  setLegNote,
   type ModeOfTravel,
   type Place,
   type POI,
@@ -81,6 +82,17 @@ describe('JourneyPlan structure', () => {
     const mode: ModeOfTravel = 'train';
     plan = setLegMode(plan, plan.legs[0]!.id, mode);
     expect(plan.legs[0]?.modeOfTravel).toBe('train');
+  });
+
+  it('setLegNote sets and clears the optional note on a leg', () => {
+    let plan = makePlan('Market trip');
+    plan = addStop(plan, makeStop('A', 0, 0));
+    plan = addStop(plan, makeStop('B', 0, 0));
+    const legId = plan.legs[0]!.id;
+    plan = setLegNote(plan, legId, 'Step-free route through the arcade');
+    expect(plan.legs[0]?.note).toBe('Step-free route through the arcade');
+    plan = setLegNote(plan, legId, '');
+    expect(plan.legs[0]?.note).toBeUndefined();
   });
 
   it('reversePlan flips stop order and reverses leg direction (one-way plans, reversed on demand)', () => {

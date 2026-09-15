@@ -27,6 +27,7 @@ const en = {
   latitude: 'Latitude',
   longitude: 'Longitude',
   note: 'Note',
+  leg_note: 'Leg note',
   move_up: 'Move earlier',
   move_down: 'Move later',
   from_catalogue: 'From the place catalogue',
@@ -42,7 +43,8 @@ const en = {
   where_am_i: 'Where am I?',
   end_follow: 'End following',
   weak_signal: 'Weak GPS signal.',
-  last_fix_seconds_ago: 'Last position fix was some seconds ago.',
+  last_fix_ago: 'Last position fix',
+  seconds_ago: 'seconds ago',
   journey_complete: 'You have arrived at your final stop. Journey complete.',
   metres: 'metres',
   kilometre: 'kilometre',
@@ -53,8 +55,16 @@ const en = {
   to_the_south: 'to the south',
   to_the_west: 'to the west',
   arrived_at: 'You have arrived at',
+  approaching: 'Approaching',
+  moving_away_from: 'Moving away from',
+  check_your_direction: 'Check your direction',
+  position_unknown: 'Position unknown.',
+  waiting_for_fix: 'Waiting for a position fix…',
+  no_fix_yet: 'No position fix yet.',
   plus_code_label: 'Plus code',
   coordinates_label: 'Coordinates',
+  your_location: 'Your location',
+  near: 'Near',
 } as const;
 
 export type StringKey = keyof typeof en;
@@ -71,8 +81,8 @@ const dictionaries: Record<Locale, Dict> = {
   pt: {},
 };
 
-/** Translate `key` for `locale`, falling back to English. */
-export function t(locale: Locale, key: StringKey): string {
+/** Translate `key` for `locale` (defaults to the app locale), falling back to English. */
+export function t(key: StringKey, locale: Locale = DEFAULT_LOCALE): string {
   return dictionaries[locale][key] ?? en[key];
 }
 

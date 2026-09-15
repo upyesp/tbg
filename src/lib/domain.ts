@@ -88,6 +88,7 @@ export interface Leg {
   fromStopId: string;
   toStopId: string;
   modeOfTravel?: ModeOfTravel;
+  note?: string;
 }
 
 export interface Versioned {
@@ -172,6 +173,21 @@ export function setLegMode(plan: JourneyPlan, legId: string, mode: ModeOfTravel)
   return touch({
     ...plan,
     legs: plan.legs.map((l) => (l.id === legId ? { ...l, modeOfTravel: mode } : l)),
+  });
+}
+
+/** Set (or clear, with '') the optional note on a leg. */
+export function setLegNote(plan: JourneyPlan, legId: string, note: string): JourneyPlan {
+  return touch({
+    ...plan,
+    legs: plan.legs.map((l) => {
+      if (l.id !== legId) return l;
+      if (note === '') {
+        const { note: _omit, ...rest } = l;
+        return rest as Leg;
+      }
+      return { ...l, note };
+    }),
   });
 }
 

@@ -6,7 +6,7 @@ import { MODE_LABELS, planToMarkdown } from '../../lib/export';
 import { planStore } from '../../lib/sync/store';
 import { POI_CATALOGUE } from '../../data/poi/seed';
 import { POI_TAXONOMY, typeLabel } from '../../data/poi/taxonomy';
-import { DEFAULT_LOCALE, t } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 
 const MODES = Object.entries(MODE_LABELS) as [ModeOfTravel, string][];
 
@@ -23,7 +23,6 @@ export function PlanEditor() {
   const [lng, setLng] = useState('');
   const [note, setNote] = useState('');
 
-  const tr = (k: Parameters<typeof t>[1]) => t(DEFAULT_LOCALE, k);
 
   if (plan === undefined) return <Navigate to="/" replace />;
 
@@ -57,21 +56,21 @@ export function PlanEditor() {
   return (
     <main id="main">
       <p>
-        <Link to="/">{tr('back_to_planner')}</Link>
+        <Link to="/">{t('back_to_planner')}</Link>
       </p>
       <h1>{plan.name}</h1>
 
       <div className="actions">
         {plan.stops.length > 0 && (
           <Link className="button" to={`/follow/${plan.id}`}>
-            {tr('follow_plan')}
+            {t('follow_plan')}
           </Link>
         )}
         <button type="button" onClick={() => planStore.reverse(plan.id)} disabled={plan.stops.length < 2}>
-          {tr('reverse_plan')}
+          {t('reverse_plan')}
         </button>
         <button type="button" onClick={exportMarkdown} disabled={plan.stops.length === 0}>
-          {tr('export_plan')}
+          {t('export_plan')}
         </button>
         <button
           type="button"
@@ -81,14 +80,14 @@ export function PlanEditor() {
             navigate('/');
           }}
         >
-          {tr('delete_plan')}
+          {t('delete_plan')}
         </button>
       </div>
 
       {plan.stops.length === 0 ? (
-        <p>{tr('no_plans')}</p>
+        <p>{t('no_plans')}</p>
       ) : (
-        <ol className="stop-list" aria-label={tr('planner_intro')}>
+        <ol className="stop-list" aria-label={t('planner_intro')}>
           {plan.stops.map((stop, i) => (
             <li key={stop.id}>
               <div className="stop-row">
@@ -104,7 +103,7 @@ export function PlanEditor() {
                   <button
                     type="button"
                     disabled={i === 0}
-                    aria-label={`${tr('move_up')}: ${stop.name}`}
+                    aria-label={`${t('move_up')}: ${stop.name}`}
                     onClick={() => planStore.reorderStop(plan.id, stop.id, i - 1)}
                   >
                     ↑
@@ -112,7 +111,7 @@ export function PlanEditor() {
                   <button
                     type="button"
                     disabled={i === plan.stops.length - 1}
-                    aria-label={`${tr('move_down')}: ${stop.name}`}
+                    aria-label={`${t('move_down')}: ${stop.name}`}
                     onClick={() => planStore.reorderStop(plan.id, stop.id, i + 1)}
                   >
                     ↓
@@ -120,7 +119,7 @@ export function PlanEditor() {
                   <button
                     type="button"
                     className="danger"
-                    aria-label={`${tr('remove_stop')}: ${stop.name}`}
+                    aria-label={`${t('remove_stop')}: ${stop.name}`}
                     onClick={() => planStore.deleteStop(plan.id, stop.id)}
                   >
                     ✕
@@ -129,7 +128,7 @@ export function PlanEditor() {
               </div>
               {i < plan.legs.length && (
                 <div className="leg-mode">
-                  <label htmlFor={`leg-${i}`}>{tr('mode_of_travel')}</label>
+                  <label htmlFor={`leg-${i}`}>{t('mode_of_travel')}</label>
                   <select
                     id={`leg-${i}`}
                     value={plan.legs[i]?.modeOfTravel ?? ''}
@@ -148,6 +147,18 @@ export function PlanEditor() {
                       </option>
                     ))}
                   </select>
+                  <label htmlFor={`leg-note-${i}`} className="visually-hidden">
+                    {t('leg_note')}
+                  </label>
+                  <input
+                    id={`leg-note-${i}`}
+                    placeholder={t('leg_note')}
+                    value={plan.legs[i]?.note ?? ''}
+                    onChange={(e) => {
+                      const legId = plan.legs[i]?.id;
+                      if (legId !== undefined) planStore.changeLegNote(plan.id, legId, e.target.value);
+                    }}
+                  />
                 </div>
               )}
             </li>
@@ -156,9 +167,9 @@ export function PlanEditor() {
       )}
 
       <section aria-labelledby="add-stop-heading">
-        <h2 id="add-stop-heading">{tr('add_stop')}</h2>
+        <h2 id="add-stop-heading">{t('add_stop')}</h2>
         <fieldset>
-          <legend className="visually-hidden">{tr('add_stop')}</legend>
+          <legend className="visually-hidden">{t('add_stop')}</legend>
           <label>
             <input
               type="radio"
@@ -166,7 +177,7 @@ export function PlanEditor() {
               checked={source === 'manual'}
               onChange={() => setSource('manual')}
             />{' '}
-            {tr('manual_entry')}
+            {t('manual_entry')}
           </label>{' '}
           <label>
             <input
@@ -175,15 +186,15 @@ export function PlanEditor() {
               checked={source === 'catalogue'}
               onChange={() => setSource('catalogue')}
             />{' '}
-            {tr('from_catalogue')}
+            {t('from_catalogue')}
           </label>
         </fieldset>
 
         {source === 'manual' ? (
-          <form aria-label={tr('add_stop')} onSubmit={addManualStop}>
-            <label htmlFor="stop-name">{tr('stop_name')}</label>
+          <form aria-label={t('add_stop')} onSubmit={addManualStop}>
+            <label htmlFor="stop-name">{t('stop_name')}</label>
             <input id="stop-name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <label htmlFor="stop-lat">{tr('latitude')}</label>
+            <label htmlFor="stop-lat">{t('latitude')}</label>
             <input
               id="stop-lat"
               inputMode="decimal"
@@ -191,7 +202,7 @@ export function PlanEditor() {
               onChange={(e) => setLat(e.target.value)}
               required
             />
-            <label htmlFor="stop-lng">{tr('longitude')}</label>
+            <label htmlFor="stop-lng">{t('longitude')}</label>
             <input
               id="stop-lng"
               inputMode="decimal"
@@ -199,9 +210,9 @@ export function PlanEditor() {
               onChange={(e) => setLng(e.target.value)}
               required
             />
-            <label htmlFor="stop-note">{tr('note')}</label>
+            <label htmlFor="stop-note">{t('note')}</label>
             <input id="stop-note" value={note} onChange={(e) => setNote(e.target.value)} />
-            <button type="submit">{tr('add_stop')}</button>
+            <button type="submit">{t('add_stop')}</button>
           </form>
         ) : (
           <div>
@@ -229,7 +240,7 @@ export function PlanEditor() {
                       planStore.appendStop(plan.id, makeStop(poi.name, poi.lat, poi.lng, poi.id))
                     }
                   >
-                    {tr('add_stop')}
+                    {t('add_stop')}
                   </button>
                 </li>
               ))}
