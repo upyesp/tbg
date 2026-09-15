@@ -6,11 +6,18 @@ import { t } from '../../lib/i18n';
 export function Planner() {
   const plans = useSyncExternalStore(planStore.subscribe, planStore.getSnapshot);
   const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   return (
     <main id="main">
       <h1>{t('planner_title')}</h1>
+
+      {error !== null && (
+        <p role="alert" className="banner warn">
+          {error}
+        </p>
+      )}
 
       <form
         aria-label={t('create_plan')}
@@ -18,10 +25,19 @@ export function Planner() {
           e.preventDefault();
           const trimmed = name.trim();
           if (trimmed === '') return; // input is required, browser prompts first
-          const plan = planStore.create(trimmed);
-          setName('');
-          // Clear feedback: the new plan opens straight in its editor.
-          navigate(`/plan/${plan.id}`);
+          try {
+            const plan = planStore.create(trimmed);
+            setName('');
+            // Clear feedback: the new plan opens straight in its editor.
+            navigate(`/plan/${plan.id}`);
+          } catch (err) {
+            // Never die silently — announce whatever went wrong.
+            setError(
+              err instanceof Error
+                ? `Could not create the plan: ${err.message}`
+                : 'Could not create the plan.',
+            );
+          }
         }}
       >
         <label htmlFor="new-plan-name">{t('plan_name_placeholder')}</label>

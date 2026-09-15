@@ -107,8 +107,23 @@ export interface JourneyPlan extends Versioned {
   updatedAt: number;
 }
 
+/**
+ * Collision-safe id. Uses crypto.randomUUID where available (secure
+ * contexts); falls back to getRandomValues / Math.random so id generation
+ * never breaks on http:// previews or older assistive-tech browsers.
+ */
 export function newId(): string {
-  return crypto.randomUUID();
+  const c = globalThis.crypto;
+  if (c !== undefined && typeof c.randomUUID === 'function') return c.randomUUID();
+  let random = '';
+  if (c !== undefined && typeof c.getRandomValues === 'function') {
+    for (const b of c.getRandomValues(new Uint8Array(8))) {
+      random += b.toString(16).padStart(2, '0');
+    }
+  } else {
+    random = Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+  }
+  return `t-${Date.now().toString(36)}-${random}`;
 }
 
 export function makePlace(name: string, lat: number, lng: number, note?: string): Place {
