@@ -8,7 +8,9 @@ import { defineConfig } from 'vite';
 //   /app/    → React SPA
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  // Relative base so the same build serves correctly from tbg.life/ (root)
+  // and from the upyesp.github.io/tbg/ preview subpath.
+  base: './',
   build: {
     rollupOptions: {
       input: {
