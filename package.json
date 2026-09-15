@@ -1,0 +1,35 @@
+{
+  "name": "tbg",
+  "description": "To Boldly Go — screen-reader-first journey planning and following",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "open-location-code": "^1.0.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "axe-core": "^4.10.0",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.9.2",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0"
+  }
+}

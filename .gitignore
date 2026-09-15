@@ -4,3 +4,6 @@ dist/
 .env.*
 .pi-web/
 .agents/
+
+# exception: env example is committed
+!.env.example
