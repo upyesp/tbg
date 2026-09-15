@@ -10,7 +10,7 @@
 export interface Versioned {
   id: string;
   updatedAt: number;
-  deleted?: boolean;
+  deleted?: boolean | undefined;
 }
 
 export function mergeEntity<T extends Versioned>(

@@ -90,7 +90,14 @@ export interface Leg {
   modeOfTravel?: ModeOfTravel;
 }
 
-export interface JourneyPlan {
+export interface Versioned {
+  id: string;
+  updatedAt: number;
+  /** Tombstone for cross-device deletion under last-write-wins sync. */
+  deleted?: boolean | undefined;
+}
+
+export interface JourneyPlan extends Versioned {
   id: string;
   name: string;
   stops: Stop[];
