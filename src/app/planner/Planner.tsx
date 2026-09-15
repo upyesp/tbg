@@ -1,11 +1,12 @@
 import { useState, useSyncExternalStore } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { planStore } from '../../lib/sync/store';
 import { t } from '../../lib/i18n';
 
 export function Planner() {
   const plans = useSyncExternalStore(planStore.subscribe, planStore.getSnapshot);
   const [name, setName] = useState('');
+  const navigate = useNavigate();
 
   return (
     <main id="main">
@@ -16,10 +17,11 @@ export function Planner() {
         onSubmit={(e) => {
           e.preventDefault();
           const trimmed = name.trim();
-          if (trimmed !== '') {
-            planStore.create(trimmed);
-            setName('');
-          }
+          if (trimmed === '') return; // input is required, browser prompts first
+          const plan = planStore.create(trimmed);
+          setName('');
+          // Clear feedback: the new plan opens straight in its editor.
+          navigate(`/plan/${plan.id}`);
         }}
       >
         <label htmlFor="new-plan-name">{t('plan_name_placeholder')}</label>
@@ -28,6 +30,7 @@ export function Planner() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="off"
+          required
         />
         <button type="submit">{t('create_plan')}</button>
       </form>

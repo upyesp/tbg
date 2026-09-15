@@ -32,12 +32,18 @@ describe('Planner accessibility', () => {
     await expectNoAxeViolations();
   });
 
-  it('creates a plan through the form', () => {
+  it('creates a plan through the form and opens its editor', () => {
     render(<App />);
     const input = screen.getByLabelText(/name your journey plan/i);
     fireEvent.change(input, { target: { value: 'Market trip' } });
     fireEvent.click(screen.getByRole('button', { name: /new journey plan/i }));
-    expect(screen.getByRole('link', { name: 'Market trip' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Market trip' })).toBeTruthy();
+  });
+
+  it('an empty plan name cannot be submitted (input is required)', () => {
+    render(<App />);
+    const input = screen.getByLabelText(/name your journey plan/i) as HTMLInputElement;
+    expect(input.required).toBe(true);
   });
 
   it('plan editor has no axe violations with stops and legs', async () => {
